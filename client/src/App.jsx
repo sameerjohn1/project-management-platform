@@ -8,20 +8,20 @@ import ProjectDetails from "./pages/ProjectDetails";
 import TaskDetails from "./pages/TaskDetails";
 
 const App = () => {
-    return (
-        <>
-            <Toaster />
-            <Routes>
-                <Route path="/" element={<Layout />}>
-                    <Route index element={<Dashboard />} />
-                    <Route path="team" element={<Team />} />
-                    <Route path="projects" element={<Projects />} />
-                    <Route path="projectsDetail" element={<ProjectDetails />} />
-                    <Route path="taskDetails" element={<TaskDetails />} />
-                </Route>
-            </Routes>
-        </>
-    );
+  return (
+    <>
+      <Toaster />
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="team" element={<Team />} />
+          <Route path="projects" element={<Projects />} />
+          <Route path="projectsDetail" element={<ProjectDetails />} />
+          <Route path="taskDetails" element={<TaskDetails />} />
+        </Route>
+      </Routes>
+    </>
+  );
 };
 
 export default App;
