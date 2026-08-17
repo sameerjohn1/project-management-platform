@@ -59,7 +59,7 @@ const syncUserDeletion = inngest.createFunction(
 const syncUserUpdation = inngest.createFunction(
   {
     id: "update-user-from-clerk",
-    triggers: { event: "clerk/user.updated" },
+    triggers: { event: "clerk/organization.updated" },
   },
   async ({ event }) => {
     const { data } = event;
@@ -93,8 +93,10 @@ const syncUserUpdation = inngest.createFunction(
 
 // Inngest function to save workspace data to database
 const syncWorkspaceCreation = inngest.createFunction(
-  { id: "sync-workspace-from-clerk" },
-  { event: "clerk/organization.created" },
+  {
+    id: "sync-workspace-from-clerk",
+    triggers: { event: "clerk/organization.created" },
+  },
   async ({ event }) => {
     const { data } = event;
     await prisma.workspace.create({
@@ -124,6 +126,7 @@ const syncWorkspaceUpdation = inngest.createFunction(
     id: "sync-workspace-update-from-clerk",
     triggers: { event: "clerk/organization.updated" },
   },
+
   async ({ event }) => {
     const { data } = event;
 
@@ -144,11 +147,31 @@ const syncWorkspaceUpdation = inngest.createFunction(
   },
 );
 
-// Create an array where we'll export future Inngest functions
+// Inngest function to delete workspace from database
+const syncWorkSpaceDeletion = inngest.createFunction(
+  {
+    id: "delete-workspace-with-clerk",
+    triggers: { event: "clerk/organization.deleted" },
+  },
+  async ({ event }) => {
+    const { data } = event;
+    if (!data?.id) {
+      throw new Error(
+        "Clerk organization.deleted event is missing an organization id",
+      );
+    }
+    await prisma.workspaceMember.deleteMany({
+      where: { workspaceId: data.id },
+    });
+    await prisma.workspace.delete({ where: { id: data.id } });
+  },
+);
+
 export const functions = [
   syncUserCreation,
   syncUserDeletion,
   syncUserUpdation,
   syncWorkspaceCreation,
   syncWorkspaceUpdation,
+  syncWorkSpaceDeletion,
 ];
