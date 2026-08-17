@@ -57,7 +57,10 @@ const syncUserDeletion = inngest.createFunction(
 
 // Inngest function to update user data in database
 const syncUserUpdation = inngest.createFunction(
-  { id: "update-user-from-clerk", triggers: { event: "clerk/user.updated" } },
+  {
+    id: "update-user-from-clerk",
+    triggers: { event: "clerk/user.updated" },
+  },
   async ({ event }) => {
     const { data } = event;
     const primaryEmail =
@@ -88,5 +91,64 @@ const syncUserUpdation = inngest.createFunction(
   },
 );
 
+// Inngest function to save workspace data to database
+const syncWorkspaceCreation = inngest.createFunction(
+  { id: "sync-workspace-from-clerk" },
+  { event: "clerk/organization.created" },
+  async ({ event }) => {
+    const { data } = event;
+    await prisma.workspace.create({
+      data: {
+        id: data.id,
+        name: data.name,
+        slug: data.slug,
+        ownerId: data.created_by,
+        image_url: data.image_url,
+      },
+    });
+
+    // Add creator as ADMIN member
+    await prisma.workspaceMember.create({
+      data: {
+        userId: data.created_by,
+        workspaceId: data.id,
+        role: "ADMIN",
+      },
+    });
+  },
+);
+
+// Inngest function to update workspace data in database
+const syncWorkspaceUpdation = inngest.createFunction(
+  {
+    id: "sync-workspace-update-from-clerk",
+    triggers: { event: "clerk/organization.updated" },
+  },
+  async ({ event }) => {
+    const { data } = event;
+
+    if (!data?.id) {
+      throw new Error(
+        "Clerk organization.updated event is missing an organization id",
+      );
+    }
+
+    await prisma.workspace.update({
+      where: { id: data.id },
+      data: {
+        name: data.name,
+        slug: data.slug,
+        image_url: data.image_url,
+      },
+    });
+  },
+);
+
 // Create an array where we'll export future Inngest functions
-export const functions = [syncUserCreation, syncUserDeletion, syncUserUpdation];
+export const functions = [
+  syncUserCreation,
+  syncUserDeletion,
+  syncUserUpdation,
+  syncWorkspaceCreation,
+  syncWorkspaceUpdation,
+];
