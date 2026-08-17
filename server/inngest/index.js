@@ -57,7 +57,10 @@ const syncUserDeletion = inngest.createFunction(
 
 // Inngest function to update user data in database
 const syncUserUpdation = inngest.createFunction(
-  { id: "update-user-from-clerk", triggers: { event: "clerk/user.updated" } },
+  {
+    id: "update-user-from-clerk",
+    triggers: { event: "clerk/user.updated" },
+  },
   async ({ event }) => {
     const { data } = event;
     const primaryEmail =
@@ -115,5 +118,37 @@ const syncWorkspaceCreation = inngest.createFunction(
   },
 );
 
+// Inngest function to update workspace data in database
+const syncWorkspaceUpdation = inngest.createFunction(
+  {
+    id: "sync-workspace-update-from-clerk",
+    triggers: { event: "clerk/organization.updated" },
+  },
+  async ({ event }) => {
+    const { data } = event;
+
+    if (!data?.id) {
+      throw new Error(
+        "Clerk organization.updated event is missing an organization id",
+      );
+    }
+
+    await prisma.workspace.update({
+      where: { id: data.id },
+      data: {
+        name: data.name,
+        slug: data.slug,
+        image_url: data.image_url,
+      },
+    });
+  },
+);
+
 // Create an array where we'll export future Inngest functions
-export const functions = [syncUserCreation, syncUserDeletion, syncUserUpdation, syncWorkspaceCreation];
+export const functions = [
+  syncUserCreation,
+  syncUserDeletion,
+  syncUserUpdation,
+  syncWorkspaceCreation,
+  syncWorkspaceUpdation,
+];
