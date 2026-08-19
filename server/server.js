@@ -4,6 +4,7 @@ import cors from "cors";
 import { clerkMiddleware } from "@clerk/express";
 import { serve } from "inngest/express";
 import { inngest, functions } from "./inngest/index.js";
+import workspaceRouter from "./routes/workSpaceRoutes.js";
 
 const app = express();
 const isVercel = Boolean(process.env.VERCEL);
@@ -17,6 +18,8 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/inngest", serve({ client: inngest, functions }));
+
+app.use("/api/workspaces", workspaceRouter);
 
 const PORT = process.env.PORT || 5000;
 
