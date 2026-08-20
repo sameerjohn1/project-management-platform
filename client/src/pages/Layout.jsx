@@ -4,19 +4,37 @@ import Sidebar from "../components/Sidebar";
 import { Outlet } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { loadTheme } from "../features/themeSlice";
-import { Loader2Icon } from "lucide-react";
-import { useUser, SignIn } from "@clerk/react";
+import { Loader2Icon, RefreshCwIcon } from "lucide-react";
+import { useUser, SignIn, useAuth, CreateOrganization, useOrganizationList } from "@clerk/react";
+import { fetchWorkspaces } from "../features/workspaceSlice";
 
 const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { loading } = useSelector((state) => state.workspace);
+  const { loading, workspaces } = useSelector((state) => state.workspace);
   const dispatch = useDispatch();
   const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
+  const { userMemberships } = useOrganizationList({ userMemberships: true });
 
   // Initial load of theme
   useEffect(() => {
     dispatch(loadTheme());
   }, []);
+
+  // initial load of workspaces and refetch on organization creation/change
+  useEffect(() => {
+    if (isLoaded && user) {
+      dispatch(fetchWorkspaces({ getToken }));
+    }
+  }, [user, isLoaded, userMemberships?.data?.length]);
+
+  if (!isLoaded || (loading && workspaces.length === 0)) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-zinc-950">
+        <Loader2Icon className="size-7 text-blue-500 animate-spin" />
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -29,12 +47,19 @@ const Layout = () => {
     );
   }
 
-  if (loading)
+  if (user && workspaces.length === 0) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white dark:bg-zinc-950">
-        <Loader2Icon className="size-7 text-blue-500 animate-spin" />
+      <div className="min-h-screen flex flex-col justify-center items-center gap-4 bg-white dark:bg-zinc-950 text-gray-900 dark:text-slate-100">
+        <CreateOrganization afterCreateOrganizationUrl="/" />
+        <button
+          onClick={() => dispatch(fetchWorkspaces({ getToken }))}
+          className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline mt-2 cursor-pointer"
+        >
+          <RefreshCwIcon className="size-4" /> Refresh Workspaces
+        </button>
       </div>
     );
+  }
 
   return (
     <div className="flex bg-white dark:bg-zinc-950 text-gray-900 dark:text-slate-100">

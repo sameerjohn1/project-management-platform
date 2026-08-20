@@ -12,7 +12,12 @@ const isVercel = Boolean(process.env.VERCEL);
 
 app.use(express.json());
 app.use(cors());
-app.use(clerkMiddleware());
+app.use(
+  clerkMiddleware({
+    publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
+    secretKey: process.env.CLERK_SECRET_KEY,
+  }),
+);
 
 app.get("/", (req, res) => {
   res.send("Server is live");
