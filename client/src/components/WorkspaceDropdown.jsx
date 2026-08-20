@@ -55,7 +55,7 @@ function WorkspaceDropdown() {
                         <p className="text-xs text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2 px-2">
                             Workspaces
                         </p>
-                        {dummyWorkspaces.map((ws) => (
+                        {workspaces.map((ws) => (
                             <div key={ws.id} onClick={() => onSelectWorkspace(ws.id)} className="flex items-center gap-3 p-2 cursor-pointer rounded hover:bg-gray-100 dark:hover:bg-zinc-800" >
                                 <img src={ws.image_url} alt={ws.name} className="w-6 h-6 rounded" />
                                 <div className="flex-1 min-w-0">
@@ -63,7 +63,7 @@ function WorkspaceDropdown() {
                                         {ws.name}
                                     </p>
                                     <p className="text-xs text-gray-500 dark:text-zinc-400 truncate">
-                                        {ws.membersCount || 0} members
+                                        {ws.members?.length || ws.membersCount || 0} members
                                     </p>
                                 </div>
                                 {currentWorkspace?.id === ws.id && (

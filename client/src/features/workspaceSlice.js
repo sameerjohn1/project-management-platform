@@ -5,15 +5,21 @@ export const fetchWorkspaces = createAsyncThunk(
   "workspace/fetchWorkspaces",
   async ({ getToken }) => {
     try {
+      const token = await getToken();
+      console.log("--> Client token from getToken():", token ? token.substring(0, 20) + "..." : token);
+      if (!token) {
+        console.log("--> Client token is EMPTY!");
+        return [];
+      }
       const { data } = await api.get("/api/workspaces", {
         headers: {
-          Authorization: `Bearer ${await getToken()}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
-      return data.workspaces || [];
+      return Array.isArray(data) ? data : (data.workspaces || []);
     } catch (error) {
-      console.log(error?.response?.data?.message || error.message);
+      console.log("--> fetchWorkspaces error:", error?.response?.data?.message || error.message);
       return [];
     }
   },
@@ -22,7 +28,7 @@ export const fetchWorkspaces = createAsyncThunk(
 const initialState = {
   workspaces: [],
   currentWorkspace: null,
-  loading: false,
+  loading: true,
 };
 
 const workspaceSlice = createSlice({
