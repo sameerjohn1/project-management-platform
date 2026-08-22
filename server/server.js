@@ -27,26 +27,39 @@ app.use("/api/inngest", serve({ client: inngest, functions }));
 
 app.use("/api/workspaces", protect, workspaceRouter);
 
-const PORT = process.env.PORT || 5000;
+const BASE_PORT = parseInt(process.env.PORT) || 5000;
+const MAX_PORT = 65535;
 
 if (!isVercel) {
-  const server = app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+const startServer = (port) => {
+  if (port > MAX_PORT) {
+    console.error('No available ports');
+    process.exit(1);
+  }
+  const server = app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
   });
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`Port ${port} is already in use, trying port ${port + 1}`);
+      startServer(port + 1);
+    } else {
+      console.error(err);
+      process.exit(1);
+    }
+  });
+  return server;
+};
 
-  process.once("SIGUSR2", () => {
-    server.close(() => {
-      process.kill(process.pid, "SIGUSR2");
-    });
-  });
+const server = startServer(BASE_PORT);
 
-  process.on("SIGINT", () => {
-    server.close(() => process.exit(0));
-  });
+process.on("SIGINT", () => {
+  server.close(() => process.exit(0));
+});
 
-  process.on("SIGTERM", () => {
-    server.close(() => process.exit(0));
-  });
+process.on("SIGTERM", () => {
+  server.close(() => process.exit(0));
+});
 }
 
 export default app;
