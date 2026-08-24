@@ -73,7 +73,6 @@ export const updateTask=async(req,res)=>{
 
         const {userId}=await req.auth();
 
-//   check if user has admin role for project
 const project=await prisma.project.findUnique({
     where:{id:task.projectId},
     include:{members:{include:{user:true}}}
@@ -100,7 +99,56 @@ return res.status(201).json({
     message:'Task updated successfully',
 })      
     } catch (error) {
-        console.log(error);
+    console.log(error);
     res.status(500).json({ message: error.code || error.message });
     }
 }
+
+
+// Delete task
+export const deleteTask = async (req, res) => {
+  try {
+    const { userId } = await req.auth();
+    const { tasksIds } = req.params;
+
+    // Check if task exists
+    const tasks = await prisma.task.findMany({
+      where: { id: {in:tasksIds} },
+    });
+
+    if(tasks.length===0){
+      return res.status(404).json({
+        message: "Task not found",
+      });
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id: tasks[0].projectId },
+      include: { members: { include: { user: true } } },
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        message: "Project not found",
+      });
+    }
+
+    if (project.team_lead !== userId) {
+      return res.status(403).json({
+        message: "You don't have admin privileges for this project",
+      });
+    }
+
+    // Delete the task
+    await prisma.task.deleteMany({
+      where: { id: {in:tasksIds} },
+    });
+
+    return res.status(200).json({
+      message: "Task deleted successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.code || error.message });
+  }
+};
