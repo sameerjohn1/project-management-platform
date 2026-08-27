@@ -4,7 +4,7 @@ import cors from "cors";
 import { clerkMiddleware } from "@clerk/express";
 import { serve } from "inngest/express";
 import { inngest, functions } from "./inngest/index.js";
-import workspaceRouter from "./routes/workSpaceRoutes.js";
+import workspaceRouter from "./routes/workspaceRoutes.js";
 import { protect } from "./middlewares/authMiddleware.js";
 import projectRouter from "./routes/projectRoutes.js";
 import taskRouter from "./routes/taskRoutes.js";
