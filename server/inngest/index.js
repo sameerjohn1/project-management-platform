@@ -1,5 +1,6 @@
 import { Inngest } from "inngest";
 import prisma from "../configs/prisma.js";
+import sendEmail from "../configs/nodemailer.js";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "project-management" });
@@ -185,6 +186,126 @@ const syncWorkspaceMemberCreation = inngest.createFunction(
   },
 );
 
+
+// Inngest function to send email on task assignment
+const sendTaskAssignmentEmail = inngest.createFunction(
+  {
+    id: "send-task-assignment-mail",
+    triggers: { event: "app/task.assigned" },
+  },
+  async ({ event, step }) => {
+    const { taskId, origin } = event.data;
+
+    const task = await step.run("fetch-task", async () => {
+      return prisma.task.findUnique({
+        where: { id: taskId },
+        include: { assignee: true, project: true },
+      });
+    });
+
+    if (!task) {
+      console.error(`Task with ID ${taskId} not found`);
+      return;
+    }
+
+    await step.run("send-assignment-email", async () => {
+      const emailBody = `
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, Helvetica, sans-serif; line-height: 1.6; }
+              .container { padding: 20px; }
+              .button { background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <p>Hi ${task.assignee.name},</p>
+              <p>You have been assigned a new task:</p>
+              <ul>
+                <li><strong>Title:</strong> ${task.title}</li>
+                <li><strong>Project:</strong> ${task.project.name}</li>
+                <li><strong>Due Date:</strong> ${new Date(task.due_date).toLocaleDateString()}</li>
+              </ul>
+              <p>
+                <a href="${origin}" class="button">View Task</a>
+              </p>
+              <p>Best regards,<br/>Project Management Team</p>
+            </div>
+          </body>
+        </html>
+      `;
+
+      await sendEmail({
+        to: task.assignee.email,
+        subject: `New Task Assignment in ${task.project.name}`,
+        html: emailBody,
+      });
+
+      console.log(`Assignment email sent to ${task.assignee.email}`);
+    });
+
+    const dueDate = new Date(task.due_date);
+    const now = new Date();
+
+    if (dueDate > now) {
+      await step.sleepUntil("wait-for-due-date", dueDate);
+
+      const latestTask = await step.run("fetch-latest-task", async () => {
+        return prisma.task.findUnique({
+          where: { id: taskId },
+          include: { assignee: true, project: true },
+        });
+      });
+
+      if (!latestTask) return;
+
+      if (latestTask.status !== "DONE") {
+        await step.run("send-task-reminder-mail", async () => {
+          const reminderBody = `
+            <html>
+              <head>
+                <style>
+                  body { font-family: Arial, Helvetica, sans-serif; line-height: 1.6; }
+                  .container { padding: 20px; }
+                  .alert { color: #d9534f; font-weight: bold; }
+                  .button { background-color: #d9534f; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <p>Hi ${latestTask.assignee.name},</p>
+                  <p class="alert">Reminder: Your task is overdue!</p>
+                  <p>The following task's due date has passed and it is still not marked as completed:</p>
+                  <ul>
+                    <li><strong>Title:</strong> ${latestTask.title}</li>
+                    <li><strong>Project:</strong> ${latestTask.project.name}</li>
+                    <li><strong>Due Date:</strong> ${new Date(latestTask.due_date).toLocaleDateString()}</li>
+                    <li><strong>Status:</strong> ${latestTask.status}</li>
+                  </ul>
+                  <p>Please complete it as soon as possible or update its status.</p>
+                  <p>
+                    <a href="${origin}" class="button">View Task</a>
+                  </p>
+                  <p>Best regards,<br/>Project Management Team</p>
+                </div>
+              </body>
+            </html>
+          `;
+
+          await sendEmail({
+            to: latestTask.assignee.email,
+            subject: `Reminder: "${latestTask.title}" is overdue in ${latestTask.project.name}`,
+            html: reminderBody,
+          });
+
+          console.log(`Reminder email sent to ${latestTask.assignee.email}`);
+        });
+      }
+    }
+  }
+);
+
 export const functions = [
   syncUserCreation,
   syncUserDeletion,
@@ -193,4 +314,5 @@ export const functions = [
   syncWorkspaceUpdation,
   syncWorkSpaceDeletion,
   syncWorkspaceMemberCreation,
+  sendTaskAssignmentEmail
 ];

@@ -1,4 +1,4 @@
-const nodemailer = require("nodemailer");
+import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
   host: "smtp-relay.brevo.com",
@@ -10,12 +10,12 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmail=async({to,subject,body})=>{
-const response=await transporter.sendMail({
-    from:process.env.SEMDER_EMAIL , 
-    to ,
-    subject ,
-    html:body, 
+const sendEmail = async ({ to, subject, html }) => {
+  const response = await transporter.sendMail({
+    from: process.env.SENDER_EMAIL,
+    to,
+    subject,
+    html,
   });
 
   return response
