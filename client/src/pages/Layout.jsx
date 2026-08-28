@@ -28,7 +28,7 @@ const Layout = () => {
     }
   }, [user, isLoaded, userMemberships?.data?.length]);
 
-  if (!isLoaded || (loading && workspaces.length === 0)) {
+  if (!isLoaded || (user && loading && workspaces.length === 0)) {
     return (
       <div className="flex items-center justify-center h-screen bg-white dark:bg-zinc-950">
         <Loader2Icon className="size-7 text-blue-500 animate-spin" />
