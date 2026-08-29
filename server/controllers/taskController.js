@@ -5,7 +5,7 @@ import { inngest } from "../inngest/index.js";
 export const createTask=async(req,res)=>{
     try {
         const {userId}=await req.auth();
-        const {projectId,name,description,type,status,dueDate,assigneeId}=req.body;
+        const {projectId,title,description,type,status,priority,due_date,assigneeId}=req.body;
 
       const origin=req.get("origin");
 
@@ -34,12 +34,13 @@ if(assigneeId && !project.members.find((member)=>member.user.id===assigneeId)){
 const task=await prisma.task.create({
     data:{
         projectId,
-        name,
+        title,
         description,
+        type,
         priority,
         assigneeId,
         status,
-        due_date:new Date(dueDate),
+        due_date:new Date(due_date),
     }
 })
 
