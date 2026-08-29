@@ -12,7 +12,7 @@ const AddProjectMember = ({ isDialogOpen, setIsDialogOpen }) => {
     const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace || null);
 
     const project = currentWorkspace?.projects.find((p) => p.id === id);
-    const projectMembersEmails = project?.members.map((member) => member.user.email);
+    const projectMembersEmails = project?.members?.map((member) => member.user.email) || [];
 
     const [email, setEmail] = useState('');
     const [isAdding, setIsAdding] = useState(false);
