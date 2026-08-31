@@ -6,7 +6,10 @@ export const fetchWorkspaces = createAsyncThunk(
   async ({ getToken }) => {
     try {
       const token = await getToken();
-      console.log("--> Client token from getToken():", token ? token.substring(0, 20) + "..." : token);
+      console.log(
+        "--> Client token from getToken():",
+        token ? token.substring(0, 20) + "..." : token,
+      );
       if (!token) {
         console.log("--> Client token is EMPTY!");
         return [];
@@ -17,9 +20,12 @@ export const fetchWorkspaces = createAsyncThunk(
         },
       });
 
-      return Array.isArray(data) ? data : (data.workspaces || []);
+      return Array.isArray(data) ? data : data.workspaces || [];
     } catch (error) {
-      console.log("--> fetchWorkspaces error:", error?.response?.data?.message || error.message);
+      console.log(
+        "--> fetchWorkspaces error:",
+        error?.response?.data?.message || error.message,
+      );
       return [];
     }
   },
@@ -77,8 +83,8 @@ const workspaceSlice = createSlice({
       );
     },
     updateProject: (state, action) => {
-      state.currentWorkspace.projects = state.currentWorkspace.projects.map((p) =>
-        p.id === action.payload.id ? action.payload : p,
+      state.currentWorkspace.projects = state.currentWorkspace.projects.map(
+        (p) => (p.id === action.payload.id ? action.payload : p),
       );
       state.workspaces = state.workspaces.map((w) =>
         w.id === state.currentWorkspace.id
@@ -148,22 +154,28 @@ const workspaceSlice = createSlice({
       );
     },
     deleteTask: (state, action) => {
+      const payload =
+        action.payload &&
+        typeof action.payload === "object" &&
+        !Array.isArray(action.payload)
+          ? action.payload
+          : { ids: action.payload || [], projectId: undefined };
+      const ids = new Set(payload.ids || []);
+
       state.currentWorkspace.projects.map((p) => {
-        p.tasks = p.tasks.filter((t) => !action.payload.includes(t.id));
+        p.tasks = p.tasks.filter((t) => !ids.has(t.id));
         return p;
       });
-      // find workspace and project by id and delete task from it
+
       state.workspaces = state.workspaces.map((w) =>
         w.id === state.currentWorkspace.id
           ? {
               ...w,
               projects: w.projects.map((p) =>
-                p.id === action.payload.projectId
+                p.id === payload.projectId
                   ? {
                       ...p,
-                      tasks: p.tasks.filter(
-                        (t) => !action.payload.includes(t.id),
-                      ),
+                      tasks: p.tasks.filter((t) => !ids.has(t.id)),
                     }
                   : p,
               ),
